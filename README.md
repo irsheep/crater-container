@@ -4,6 +4,8 @@
 
 Deploy *Crater* as a containerized application using Docker.
 
+When testing SSL the container will create a Self-Signed certificate in the ``certificates`` volume. If you already have a valid certificate and private key for the domain that you're testing with, then copy the respective files to the certificates volume named ``crater.pem`` and ``crater.key`` and restart the container.
+
 If testing SSL certificates using Lets Encrypt 
 1. The domain is valid and it can be accessed from the internet
 2. LETSENCRYPT_STAGING is set to true in the ``.env`` file
