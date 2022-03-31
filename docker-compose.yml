@@ -1,0 +1,77 @@
+version: '3'
+services:
+
+  app:
+    image: irsheep/crater-php:0.1.0-alpha
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - app:/var/www/storage/app:z
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.artisan.schedule: "@every 60s"
+      ofelia.job-exec.artisan.command: "php artisan schedule:run"
+    networks:
+      - frontend
+      - database
+    expose:
+      - 9000
+    depends_on:
+      - db
+
+  db:
+    image: mariadb
+    restart: unless-stopped
+    volumes:
+      - database:/var/lib/mysql
+    environment:
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    networks:
+      - database
+    expose:
+      - 3306
+
+  nginx:
+    image: irsheep/crater-nginx:alpha
+    restart: unless-stopped
+    env_file:
+      - .env
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.nginx.schedule: "0 30 * * * *"
+      ofelia.job-exec.nginx.command: "/opt/entrypoint.sh renew"
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - app:/var/www/storage/app:z
+      - certificates:/opt/certificates
+      - acme:/root/.acme.sh
+    networks:
+      - frontend
+    depends_on:
+      - app
+
+  ofelia:
+    image: mcuadros/ofelia
+    restart: unless-stopped
+    command: daemon --docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - app
+      - nginx
+
+volumes:
+  app: null
+  database: null
+  certificates: null
+  acme: null
+
+networks:
+  frontend: null
+  database: null
